@@ -15,6 +15,8 @@ var Engine = function (engineFile) {
     this.engineFile = path.normalize(engineFile);
 };
 
+const bestMoveRegex = /^bestmove (.*?)( ponder .*)?$/g;
+
 util.inherits(Engine, events.EventEmitter);
 
 //This function starts the engine process and returns a promise which is
@@ -84,7 +86,7 @@ Engine.prototype.uciCommand = function () {
         for (var i = 0; i < lines.length; i++) {
             if (lines[i] === 'uciok') {
                 self.engineProcess.stdout.removeListener('data', engineStdoutListener);
-                deferred.resolve( {id: id, options: options} );
+                deferred.resolve({id: id, options: options});
             } else {
                 var stringifiedLine = S(lines[i]);
                 if (stringifiedLine.startsWith('option')) {
@@ -127,7 +129,7 @@ Engine.prototype.uciCommand = function () {
 //@param  {String}  optionValue The value of the option
 Engine.prototype.setOptionCommand = function (optionName, optionValue) {
     //TODO:parse options from uci command and if option type is button, call the setoption on if optionValue is true
-    var command = 'setoption name ' + optionName + (optionValue? (' value ' + optionValue) : '') + endOfLine;
+    var command = 'setoption name ' + optionName + (optionValue ? (' value ' + optionValue) : '') + endOfLine;
     this.engineProcess.stdin.write(command);
     return this.isReadyCommand();
 };
@@ -192,8 +194,7 @@ Engine.prototype.timeLimitedGoCommand = function (infoHandler,
                 infoHandler('info', lines[i]);
             } else if (stringifiedLine.startsWith('bestmove')) {
                 self.engineProcess.stdout.removeListener('data', engineStdoutListener);
-                var moveRegex = /bestmove (.*?) /g;
-                var match = moveRegex.exec(lines[i]);
+                var match = bestMoveRegex.exec(lines[i]);
                 if (match) {
                     deferred.resolve(utilities.convertToMoveObject(match[1]));
                 } else {
@@ -254,8 +255,7 @@ Engine.prototype.stopCommand = function () {
                     self.engineProcess.stdout.removeListener('data', self.goInfiniteListener);
                 }
                 self.engineProcess.stdout.removeListener('data', engineStdoutListener);
-                var moveRegex = /bestmove (.*?) /g;
-                var match = moveRegex.exec(lines[i]);
+                var match = bestMoveRegex.exec(lines[i]);
                 if (match) {
                     deferred.resolve(utilities.convertToMoveObject(match[1]));
                 } else {
