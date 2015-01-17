@@ -160,7 +160,7 @@ Engine.prototype.positionCommand = function (fen, moves) {
     }
 
     if (moves) {
-      this.engineProcess.stdin.write(' moves ' + moves);
+        this.engineProcess.stdin.write(' moves ' + moves);
     }
     this.engineProcess.stdin.write(endOfLine);
     return this.isReadyCommand();
