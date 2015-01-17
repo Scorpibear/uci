@@ -10,12 +10,14 @@ var S = require('string');
 var os = require('os');
 var path = require('path');
 var utilities = require('./utilities.js');
+var named = require('named-regexp').named
 
 var Engine = function (engineFile) {
     this.engineFile = path.normalize(engineFile);
 };
 
 const bestMoveRegex = /^bestmove (.*?)( ponder .*)?$/g;
+const infoRegex = named(/^info (?:depth (:<depth>\d+)).*?(?:multipv (:<pv_index>\d+)).*?(?:score cp (:<score>-?\d+).*?(?:pv (:<move>\w+)))/);
 
 util.inherits(Engine, events.EventEmitter);
 
@@ -222,11 +224,17 @@ Engine.prototype.timeLimitedGoCommand = function (infoHandler,
 Engine.prototype.goInfiniteCommand = function (infoHandler) {
     var engineStdoutListener = function (data) {
         var lines = data.toString().split(endOfLineRegExp);
-        for (var i = 0; i < lines.length; i++) {
-            //TODO:Parse info and bestmove
-            var stringifiedLine = S(lines[i]);
+        for (let i = 0; i < lines.length; i++) {
+            let stringifiedLine = S(lines[i]);
+
             if (stringifiedLine.startsWith('info') && infoHandler) {
-                infoHandler(lines[i]);
+                const match = infoRegex.exec(stringifiedLine);
+                if (match) {
+                    let captures = match.captures
+                    Object.keys(captures).forEach(function(key) { captures[key] = captures[key][0] })
+
+                    infoHandler(captures);
+                }
             }
         }
     };
