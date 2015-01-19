@@ -17,7 +17,7 @@ var Engine = function (engineFile) {
 };
 
 const bestMoveRegex = /^bestmove (.*?)(:? ponder .*)?$/g;
-const infoRegex = named(/^info (?:depth (:<depth>\d+)).*?(?:multipv (:<pv_index>\d+)).*?(?:score cp (:<score>-?\d+).*?(?:pv (:<move>\w+)))/);
+const infoRegex = named(/^info (?:depth (:<depth>\d+)).*?(?:multipv (:<pv_index>\d+)).*?(?:(?:score cp (:<score>-?\d+))|(?:score mate (:<mate>\d+))).*?(?:pv (:<move>\w+))/);
 
 util.inherits(Engine, events.EventEmitter);
 
