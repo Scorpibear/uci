@@ -16,7 +16,7 @@ var Engine = function (engineFile) {
     this.engineFile = path.normalize(engineFile);
 };
 
-const bestMoveRegex = /^bestmove (.*?)( ponder .*)?$/g;
+const bestMoveRegex = /^bestmove (.*?)(:? ponder .*)?$/g;
 const infoRegex = named(/^info (?:depth (:<depth>\d+)).*?(?:multipv (:<pv_index>\d+)).*?(?:score cp (:<score>-?\d+).*?(?:pv (:<move>\w+)))/);
 
 util.inherits(Engine, events.EventEmitter);
@@ -196,7 +196,7 @@ Engine.prototype.timeLimitedGoCommand = function (infoHandler,
                 infoHandler('info', lines[i]);
             } else if (stringifiedLine.startsWith('bestmove')) {
                 self.engineProcess.stdout.removeListener('data', engineStdoutListener);
-                var match = bestMoveRegex.exec(lines[i]);
+                var match = new RegExp(bestMoveRegex).exec(lines[i]);
                 if (match) {
                     deferred.resolve(utilities.convertToMoveObject(match[1]));
                 } else {
@@ -263,7 +263,7 @@ Engine.prototype.stopCommand = function () {
                     self.engineProcess.stdout.removeListener('data', self.goInfiniteListener);
                 }
                 self.engineProcess.stdout.removeListener('data', engineStdoutListener);
-                var match = bestMoveRegex.exec(lines[i]);
+                var match = new RegExp(bestMoveRegex).exec(lines[i]);
                 if (match) {
                     deferred.resolve(utilities.convertToMoveObject(match[1]));
                 } else {
