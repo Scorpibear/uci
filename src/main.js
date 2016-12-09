@@ -10,14 +10,10 @@ var S = require('string');
 var os = require('os');
 var path = require('path');
 var utilities = require('./utilities.js');
-var named = require('named-regexp').named
 
 var Engine = function (engineFile) {
     this.engineFile = path.normalize(engineFile);
 };
-
-const bestMoveRegex = /^bestmove (.*?)(:? ponder .*)?$/g;
-const infoRegex = named(/^info (?:depth (:<depth>\d+)).*?(?:multipv (:<pv_index>\d+)).*?(?:(?:score cp (:<score>-?\d+))|(?:score mate (:<mate>\d+))).*?(?:pv (:<move>\w+))/);
 
 util.inherits(Engine, events.EventEmitter);
 
@@ -88,7 +84,7 @@ Engine.prototype.uciCommand = function () {
         for (var i = 0; i < lines.length; i++) {
             if (lines[i] === 'uciok') {
                 self.engineProcess.stdout.removeListener('data', engineStdoutListener);
-                deferred.resolve({id: id, options: options});
+                deferred.resolve( {id: id, options: options} );
             } else {
                 var stringifiedLine = S(lines[i]);
                 if (stringifiedLine.startsWith('option')) {
@@ -131,7 +127,7 @@ Engine.prototype.uciCommand = function () {
 //@param  {String}  optionValue The value of the option
 Engine.prototype.setOptionCommand = function (optionName, optionValue) {
     //TODO:parse options from uci command and if option type is button, call the setoption on if optionValue is true
-    var command = 'setoption name ' + optionName + (optionValue ? (' value ' + optionValue) : '') + endOfLine;
+    var command = 'setoption name ' + optionName + (optionValue? (' value ' + optionValue) : '') + endOfLine;
     this.engineProcess.stdin.write(command);
     return this.isReadyCommand();
 };
@@ -164,7 +160,7 @@ Engine.prototype.positionCommand = function (fen, moves) {
     }
 
     if (moves) {
-        this.engineProcess.stdin.write(' moves ' + moves);
+      this.engineProcess.stdin.write(' moves ' + moves);
     }
     this.engineProcess.stdin.write(endOfLine);
     return this.isReadyCommand();
@@ -196,7 +192,8 @@ Engine.prototype.timeLimitedGoCommand = function (infoHandler,
                 infoHandler('info', lines[i]);
             } else if (stringifiedLine.startsWith('bestmove')) {
                 self.engineProcess.stdout.removeListener('data', engineStdoutListener);
-                var match = new RegExp(bestMoveRegex).exec(lines[i]);
+                var moveRegex = /bestmove (.*?) /g;
+                var match = moveRegex.exec(lines[i]);
                 if (match) {
                     deferred.resolve(utilities.convertToMoveObject(match[1]));
                 } else {
@@ -224,17 +221,11 @@ Engine.prototype.timeLimitedGoCommand = function (infoHandler,
 Engine.prototype.goInfiniteCommand = function (infoHandler) {
     var engineStdoutListener = function (data) {
         var lines = data.toString().split(endOfLineRegExp);
-        for (let i = 0; i < lines.length; i++) {
-            let stringifiedLine = S(lines[i]);
-
+        for (var i = 0; i < lines.length; i++) {
+            //TODO:Parse info and bestmove
+            var stringifiedLine = S(lines[i]);
             if (stringifiedLine.startsWith('info') && infoHandler) {
-                const match = infoRegex.exec(stringifiedLine);
-                if (match) {
-                    let captures = match.captures
-                    Object.keys(captures).forEach(function(key) { captures[key] = captures[key][0] })
-
-                    infoHandler(captures);
-                }
+                infoHandler(lines[i]);
             }
         }
     };
@@ -259,6 +250,7 @@ Engine.prototype.goDepthCommand = function (depth, infoHandler) {
     var self = this;
     var deferred = Q.defer();
     var lastStdoutLine = "";
+    var preLastStdoutLine = "";
     var engineStdoutListener = function (data) {
         var lines = data.toString().split(endOfLineRegExp);
         for (var i = 0; i < lines.length; i++) {
@@ -267,17 +259,26 @@ Engine.prototype.goDepthCommand = function (depth, infoHandler) {
                 infoHandler(lines[i]);
             } else if (stringifiedLine.startsWith('bestmove')) {
                 self.engineProcess.stdout.removeListener('data', engineStdoutListener);
-                var moveRegex = /bestmove (.*?) /g;
+                var moveRegex = /bestmove ([a-h1-8]+[qrbn]?)/g;
                 var match = moveRegex.exec(lines[i]);
                 if (match) {
+                    var lineToParse = (lastStdoutLine) ? lastStdoutLine : preLastStdoutLine;
                     var scoreRegex = /(.*?) score cp (.*?) /g;
-                    var matchScore = scoreRegex.exec(lastStdoutLine);
-                    var score = (matchScore) ? matchScore[2] : "";
+                    var matchScore = scoreRegex.exec(lineToParse);
+                    var score = "";
+                    if(matchScore) {
+                        score = matchScore[2];
+                    } else {
+                        var mateRegex = /(.*?) score mate (.*?) /g;
+                        var matchMate = mateRegex.exec(lineToParse);
+                        score = (matchMate) ? matchMate[2] : "";
+                    }
                     deferred.resolve({ bestmove: utilities.convertToMoveObject(match[1]), score: score });
                 } else {
                     throw new Error('Invalid format of bestmove. Expected "bestmove <move>". Returned "' + lines[i] + '"');
                 }
             }
+            preLastStdoutLine = lastStdoutLine;
             lastStdoutLine = lines[i];
         }
     };
@@ -308,7 +309,8 @@ Engine.prototype.stopCommand = function () {
                     self.engineProcess.stdout.removeListener('data', self.goInfiniteListener);
                 }
                 self.engineProcess.stdout.removeListener('data', engineStdoutListener);
-                var match = new RegExp(bestMoveRegex).exec(lines[i]);
+                var moveRegex = /bestmove (.*?) /g;
+                var match = moveRegex.exec(lines[i]);
                 if (match) {
                     deferred.resolve(utilities.convertToMoveObject(match[1]));
                 } else {
