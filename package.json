@@ -1,7 +1,7 @@
 {
   "name": "uci",
   "main": "./src/main.js",
-  "version": "0.4",
+  "version": "0.4.0",
   "author": "Mikhail Subach <scorpibear@tut.by>",
   "description": "A thin wrapper on a UCI chess engine",
   "homepage": "http://imor.github.io/uci/docs/src/main.html",
