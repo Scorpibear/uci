@@ -1,8 +1,8 @@
 {
   "name": "uci",
   "main": "./src/main.js",
-  "version": "0.3.3",
-  "author": "Raminder Singh <romi_ssk@yahoo.co.in>",
+  "version": "0.4",
+  "author": "Mikhail Subach <scorpibear@tut.by>",
   "description": "A thin wrapper on a UCI chess engine",
   "homepage": "http://imor.github.io/uci/docs/src/main.html",
   "repository": {
@@ -14,7 +14,7 @@
     "uci"
   ],
   "dependencies": {
-    "q": "0.9.x",
+    "q": "1.4.x",
     "is-running": "1.0.x",
     "string": "1.7.x"
   },
